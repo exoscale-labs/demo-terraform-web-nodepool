@@ -1,0 +1,47 @@
+#cloud-config
+
+package_upgrade: true
+packages:
+  - nginx
+  - nodejs
+  - npm
+write_files:
+  - owner: www-data:www-data
+    path: /etc/nginx/sites-available/default
+    content: |
+      server {
+        listen 80;
+        location / {
+          proxy_pass http://localhost:3000;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection keep-alive;
+          proxy_set_header Host $host;
+          proxy_cache_bypass $http_upgrade;
+        }
+      }
+  - owner: webapp:webapp
+    path: /home/webapp/myapp/index.js
+    content: |
+      var express = require('express')
+      var app = express()
+      var os = require('os');
+
+      app.get('/', function (req, res) {
+        var body = "<html><head><title>Hello from " + os.hostname() + "</title></head>" +
+          "<body>" +
+          "<img width=250px src=https://www.exoscale.com/static/img/exoscale-logo-full-201711.svg alt=ExoscaleLogo><br>" +
+          "<p>Hello <b>${customer}</b> <br><br> host " + os.hostname() + "!</p>" +
+          "</body></html>"
+        res.send(body)
+      })
+
+      app.listen(3000, function () {
+        console.log('Hello world app listening on port 3000!')
+      })
+runcmd:
+  - systemctl restart nginx
+  - cd "/home/webapp/myapp"
+  - npm init
+  - npm install express -y
+  - nodejs index.js

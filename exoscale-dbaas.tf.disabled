@@ -1,0 +1,29 @@
+resource "exoscale_database" "pg_prod" {
+  zone = var.zone
+  name = "pg-demo"
+  type = "pg"
+  plan = "hobbyist-2"
+
+  maintenance_dow  = "sunday"
+  maintenance_time = "23:00:00"
+
+  termination_protection = false
+
+  pg {
+    version = "14"
+    backup_schedule = "04:00"
+
+    ip_filter = [
+      "0.0.0.0/32"
+    ]
+
+    pg_settings = jsonencode({
+      timezone: "Europe/Zurich"
+    })
+  }
+}
+
+output "database_uri" {
+  value = exoscale_database.pg_prod.uri
+  sensitive = true
+}
